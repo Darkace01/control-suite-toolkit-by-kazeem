@@ -237,6 +237,7 @@ class CommerceControlSuite {
         );
         echo '<p class="description">' . wp_kses(
             sprintf(
+                /* translators: %s: The full URL of the shipping event webhook. */
                 __('Enter the endpoint slug (e.g., "shipping-webhook"). The full URL will be: <br><strong>%s</strong>', 'commerce-control-suite'),
                 esc_url($fullUrl)
             ),
@@ -1319,6 +1320,7 @@ class CommerceControlSuite {
         
         $tableName = $wpdb->prefix . $this->logTable;
         
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->insert(
             $tableName,
             array(
@@ -1347,6 +1349,7 @@ class CommerceControlSuite {
         
         $tableName = $wpdb->prefix . $this->logTable;
         
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
         $wpdb->update(
             $tableName,
             array(
