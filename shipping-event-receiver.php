@@ -1,14 +1,18 @@
 <?php
 /**
- * Plugin Name: Shipping Event Receiver
- * Plugin URI: https://example.com/shipping-event-receiver
- * Description: Receives event notifications for orders from third-party shipping platforms and logs all requests
- * Version: 1.1.1
+ * Plugin Name: WooCommerce Control Suite
+ * Plugin URI: https://example.com/woocommerce-control-suite
+ * Description: Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks
+ * Version: 1.2.6
  * Author: Kazeem Quadri
  * Author URI: https://example.com
  * License: GPL v2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: shipping-event-receiver
+ * Text Domain: wc-control-suite
+ * Requires at least: 5.0
+ * Requires PHP: 7.2
+ * WC requires at least: 3.0
+ * WC tested up to: 8.0
  */
 
 // Prevent direct access
@@ -19,6 +23,17 @@ if (!defined('ABSPATH')) {
 // Define plugin file constant
 if (!defined('SHIPPING_EVENT_RECEIVER_FILE')) {
     define('SHIPPING_EVENT_RECEIVER_FILE', __FILE__);
+}
+
+// Define plugin constants
+if (!defined('WC_CONTROL_SUITE_VERSION')) {
+    define('WC_CONTROL_SUITE_VERSION', '1.2.0');
+}
+if (!defined('WC_CONTROL_SUITE_PLUGIN_DIR')) {
+    define('WC_CONTROL_SUITE_PLUGIN_DIR', plugin_dir_path(__FILE__));
+}
+if (!defined('WC_CONTROL_SUITE_PLUGIN_URL')) {
+    define('WC_CONTROL_SUITE_PLUGIN_URL', plugin_dir_url(__FILE__));
 }
 
 // Prevent duplicate class declaration
@@ -41,11 +56,15 @@ class Shipping_Event_Receiver {
         // Initialize sub-modules
         $this->order_control = new SER_Order_Control();
         $this->payment_gateway_control = new SER_Payment_Gateway_Control();
+        
         // Register REST API endpoint
         add_action('rest_api_init', array($this, 'register_endpoint'));
         
         // Create database table on plugin activation
         register_activation_hook($this->plugin_file, array($this, 'create_log_table'));
+        
+        // Check and create table if it doesn't exist (fallback)
+        add_action('admin_init', array($this, 'check_database_table'));
         
         // Add admin menu
         add_action('admin_menu', array($this, 'add_admin_menu'));
@@ -67,6 +86,30 @@ class Shipping_Event_Receiver {
     }
     
     /**
+     * Handle old page slug redirects for backward compatibility
+     */
+    public function handle_old_page_slug() {
+        if (is_admin() && isset($_GET['page'])) {
+            $old_to_new = array(
+                'shipping-event-receiver' => 'wc-control-suite',
+                'shipping-event-logs' => 'wc-event-logs',
+                'shipping-order-control' => 'wc-order-control',
+                'shipping-payment-gateway' => 'wc-payment-gateway'
+            );
+            
+            $current_page = sanitize_text_field($_GET['page']);
+            
+            if (isset($old_to_new[$current_page])) {
+                $new_page = $old_to_new[$current_page];
+                $redirect_url = add_query_arg('page', $new_page, admin_url('admin.php'));
+                wp_safe_remote_get($redirect_url);
+                wp_redirect($redirect_url);
+                exit;
+            }
+        }
+    }
+    
+    /**
      * Get endpoint slug from settings
      */
     private function get_endpoint() {
@@ -79,54 +122,57 @@ class Shipping_Event_Receiver {
      * Add admin menu
      */
     public function add_admin_menu() {
+        // Handle old slug for backward compatibility
+        add_action('admin_init', array($this, 'handle_old_page_slug'));
+        
         // Add top-level menu in sidebar
         add_menu_page(
-            'Shipping Event Receiver',
-            'Shipping Events',
+            'WooCommerce Control Suite',
+            'WC Control Suite',
             'manage_options',
-            'shipping-event-receiver',
+            'wc-control-suite',
             array($this, 'render_dashboard_page'),
-            'dashicons-upload',
+            'dashicons-admin-generic',
             56
         );
         
         // Add submenu for Dashboard
         add_submenu_page(
-            'shipping-event-receiver',
+            'wc-control-suite',
             'Dashboard',
             'Dashboard',
             'manage_options',
-            'shipping-event-receiver',
+            'wc-control-suite',
             array($this, 'render_dashboard_page')
         );
         
         // Add submenu for Event Logs
         add_submenu_page(
-            'shipping-event-receiver',
-            'Event Logs',
+            'wc-control-suite',
+            'Shipping Event Logs',
             'Event Logs',
             'manage_options',
-            'shipping-event-logs',
+            'wc-event-logs',
             array($this, 'render_settings_page')
         );
         
         // Add submenu for Order Control
         add_submenu_page(
-            'shipping-event-receiver',
+            'wc-control-suite',
             'Order Control',
             'Order Control',
             'manage_options',
-            'shipping-order-control',
+            'wc-order-control',
             array($this, 'render_order_control_page')
         );
         
         // Add submenu for Payment Gateway Control
         add_submenu_page(
-            'shipping-event-receiver',
+            'wc-control-suite',
             'Payment Gateway Control',
             'Payment Gateway',
             'manage_options',
-            'shipping-payment-gateway',
+            'wc-payment-gateway',
             array($this, 'render_payment_gateway_page')
         );
     }
@@ -214,57 +260,57 @@ class Shipping_Event_Receiver {
         
         ?>
         <div class="wrap">
-            <h1>Shipping Events Dashboard</h1>
+            <h1>WooCommerce Control Suite - Dashboard</h1>
             
             <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
                 
                 <!-- Webhook Info -->
                 <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-                    <h2 style="margin-top: 0;">Webhook Endpoint</h2>
+                    <h2 style="margin-top: 0;"><span class="dashicons dashicons-admin-links" style="color: #2271b1;"></span> Shipping Webhook</h2>
                     <p><strong>URL:</strong></p>
                     <input type="text" value="<?php echo esc_url($full_url); ?>" readonly class="large-text" style="background: #f5f5f5;" />
                     <p style="margin-top: 10px;">
-                        <a href="<?php echo admin_url('admin.php?page=shipping-event-logs'); ?>" class="button">View Logs</a>
+                        <a href="<?php echo admin_url('admin.php?page=wc-event-logs'); ?>" class="button">View Logs</a>
                     </p>
                 </div>
                 
                 <!-- Event Logs Stats -->
                 <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-                    <h2 style="margin-top: 0;">Event Logs</h2>
+                    <h2 style="margin-top: 0;"><span class="dashicons dashicons-list-view" style="color: #2271b1;"></span> Event Logs</h2>
                     <p><strong>Total:</strong> <?php echo number_format($total_logs); ?></p>
                     <p><strong>Success:</strong> <span style="color: green;"><?php echo number_format($success_logs); ?></span></p>
                     <p><strong>Errors:</strong> <span style="color: red;"><?php echo number_format($error_logs); ?></span></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=shipping-event-logs'); ?>" class="button">View All Logs</a>
+                        <a href="<?php echo admin_url('admin.php?page=wc-event-logs'); ?>" class="button">View All Logs</a>
                     </p>
                 </div>
                 
                 <!-- Order Control Stats -->
                 <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-                    <h2 style="margin-top: 0;">Order Control</h2>
+                    <h2 style="margin-top: 0;"><span class="dashicons dashicons-cart" style="color: #2271b1;"></span> Order Control</h2>
                     <p><strong>Status:</strong> <span style="color: <?php echo $order_stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo ucfirst($order_stats['current_status']); ?></span></p>
                     <p><strong>Orders Enabled:</strong> <?php echo $order_stats['orders_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p><strong>Timeframe Enabled:</strong> <?php echo $order_stats['timeframe_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=shipping-order-control'); ?>" class="button">Manage Orders</a>
+                        <a href="<?php echo admin_url('admin.php?page=wc-order-control'); ?>" class="button">Manage Orders</a>
                     </p>
                 </div>
                 
                 <!-- Payment Gateway Stats -->
                 <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
-                    <h2 style="margin-top: 0;">Payment Gateway Control</h2>
+                    <h2 style="margin-top: 0;"><span class="dashicons dashicons-money-alt" style="color: #2271b1;"></span> Payment Gateways</h2>
                     <p><strong>Total Rules:</strong> <?php echo number_format($payment_stats['total_rules']); ?></p>
                     <p><strong>Active Currencies:</strong> <?php echo number_format($payment_stats['active_currencies']); ?></p>
                     <p><strong>Available Gateways:</strong> <?php echo number_format($payment_stats['available_gateways']); ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway'); ?>" class="button">Manage Gateways</a>
+                        <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway'); ?>" class="button">Manage Gateways</a>
                     </p>
                 </div>
             </div>
             
             <!-- Recent Activity -->
             <div style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px; margin-top: 20px;">
-                <h2>Recent Event Logs</h2>
+                <h2><span class="dashicons dashicons-clock" style="color: #2271b1;"></span> Recent Event Logs</h2>
                 <?php if (!empty($recent_logs)): ?>
                 <table class="wp-list-table widefat fixed striped">
                     <thead>
@@ -312,7 +358,7 @@ class Shipping_Event_Receiver {
         
         ?>
         <div class="wrap">
-            <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
+            <h1><span class="dashicons dashicons-list-view"></span> Shipping Event Logs</h1>
             
             <div class="notice notice-info">
                 <p><strong>Current Webhook URL:</strong> <code><?php echo esc_url($full_url); ?></code></p>
@@ -620,7 +666,7 @@ class Shipping_Event_Receiver {
      * Add settings link on plugins page
      */
     public function add_settings_link($links) {
-        $settings_link = '<a href="' . admin_url('admin.php?page=shipping-event-receiver') . '">Settings</a>';
+        $settings_link = '<a href="' . admin_url('admin.php?page=wc-control-suite') . '">Settings</a>';
         array_unshift($links, $settings_link);
         return $links;
     }
@@ -638,8 +684,15 @@ class Shipping_Event_Receiver {
             $settings = array(
                 'enable_orders' => isset($_POST['enable_orders']) ? true : false,
                 'enable_timeframe' => isset($_POST['enable_timeframe']) ? true : false,
+                'enable_date_range' => isset($_POST['enable_date_range']) ? true : false,
                 'start_time' => sanitize_text_field($_POST['start_time']),
                 'end_time' => sanitize_text_field($_POST['end_time']),
+                'start_datetime' => sanitize_text_field($_POST['start_datetime']),
+                'end_datetime' => sanitize_text_field($_POST['end_datetime']),
+                'restriction_type' => sanitize_text_field($_POST['restriction_type']),
+                'restricted_categories' => isset($_POST['restricted_categories']) ? array_map('intval', $_POST['restricted_categories']) : array(),
+                'restricted_products' => isset($_POST['restricted_products']) ? array_map('intval', $_POST['restricted_products']) : array(),
+                'redirect_url' => esc_url_raw($_POST['redirect_url']),
                 'disabled_message' => sanitize_textarea_field($_POST['disabled_message'])
             );
             $this->order_control->update_settings($settings);
@@ -649,17 +702,22 @@ class Shipping_Event_Receiver {
         $settings = $this->order_control->get_settings();
         $stats = $this->order_control->get_statistics();
         
+        // Get categories and products for dropdowns
+        $categories = get_terms(array('taxonomy' => 'product_cat', 'hide_empty' => false));
+        $products = get_posts(array('post_type' => 'product', 'posts_per_page' => -1, 'orderby' => 'title', 'order' => 'ASC'));
+        
         ?>
         <div class="wrap">
-            <h1>Order Control Settings</h1>
+            <h1><span class="dashicons dashicons-cart"></span> Order Control Settings</h1>
             
             <div class="notice notice-info">
-                <p><strong>Current Status:</strong> <span style="color: <?php echo $stats['current_status'] === 'active' ? 'green' : 'red'; ?>;"><?php echo ucfirst($stats['current_status']); ?></span></p>
+                <p><strong>Current Status:</strong> <span style="color: <?php echo $stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo ucfirst($stats['current_status']); ?></span></p>
             </div>
             
             <form method="post" action="">
                 <?php wp_nonce_field('ser_order_control_save', 'ser_order_control_nonce'); ?>
                 
+                <h2>General Settings</h2>
                 <table class="form-table">
                     <tr>
                         <th scope="row">Enable Orders</th>
@@ -672,11 +730,62 @@ class Shipping_Event_Receiver {
                     </tr>
                     
                     <tr>
-                        <th scope="row">Enable Timeframe Restrictions</th>
+                        <th scope="row">Restriction Type</th>
+                        <td>
+                            <select name="restriction_type" id="restriction_type" class="regular-text">
+                                <option value="all" <?php selected($settings['restriction_type'], 'all'); ?>>All Products</option>
+                                <option value="categories" <?php selected($settings['restriction_type'], 'categories'); ?>>Specific Categories</option>
+                                <option value="products" <?php selected($settings['restriction_type'], 'products'); ?>>Specific Products</option>
+                            </select>
+                            <p class="description">Choose what products should be affected by order restrictions</p>
+                        </td>
+                    </tr>
+                    
+                    <tr id="categories_row" >
+                        <th scope="row">Restricted Categories</th>
+                        <td>
+                            <?php if (!empty($categories) && !is_wp_error($categories)): ?>
+                            <select name="restricted_categories[]" multiple size="10" style="width: 100%; max-width: 500px;">
+                                <?php foreach ($categories as $category): ?>
+                                <option value="<?php echo esc_attr($category->term_id); ?>" <?php selected(in_array($category->term_id, $settings['restricted_categories'])); ?>>
+                                    <?php echo esc_html($category->name); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Hold Ctrl/Cmd to select multiple categories</p>
+                            <?php else: ?>
+                            <p style="color: #d63638;"><strong>No product categories found.</strong> Please create at least one category first.</p>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    
+                    <tr id="products_row">
+                        <th scope="row">Restricted Products</th>
+                        <td>
+                            <?php if (!empty($products)): ?>
+                            <select name="restricted_products[]" multiple size="10" style="width: 100%; max-width: 500px;">
+                                <?php foreach ($products as $product): ?>
+                                <option value="<?php echo esc_attr($product->ID); ?>" <?php selected(in_array($product->ID, $settings['restricted_products'])); ?>>
+                                    <?php echo esc_html($product->post_title); ?>
+                                </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">Hold Ctrl/Cmd to select multiple products</p>
+                            <?php else: ?>
+                            <p style="color: #d63638;"><strong>No products found.</strong> Please create at least one product first.</p>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h2>Time Restrictions</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Enable Time Restrictions</th>
                         <td>
                             <label>
                                 <input type="checkbox" name="enable_timeframe" value="1" <?php checked($settings['enable_timeframe'], true); ?> />
-                                Only allow orders during specific times
+                                Only allow orders during specific times of day
                             </label>
                         </td>
                     </tr>
@@ -696,6 +805,46 @@ class Shipping_Event_Receiver {
                             <p class="description">Orders will be blocked after this time</p>
                         </td>
                     </tr>
+                </table>
+                
+                <h2>Date/Time Range Restrictions</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Enable Date/Time Range</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="enable_date_range" value="1" <?php checked($settings['enable_date_range'], true); ?> />
+                                Restrict orders to a specific date and time range
+                            </label>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Start Date & Time</th>
+                        <td>
+                            <input type="datetime-local" name="start_datetime" value="<?php echo esc_attr($settings['start_datetime']); ?>" class="regular-text" />
+                            <p class="description">Orders will be allowed starting from this date and time (Format: YYYY-MM-DDTHH:MM)</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">End Date & Time</th>
+                        <td>
+                            <input type="datetime-local" name="end_datetime" value="<?php echo esc_attr($settings['end_datetime']); ?>" class="regular-text" />
+                            <p class="description">Orders will be blocked after this date and time (Format: YYYY-MM-DDTHH:MM)</p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <h2>Redirect & Messages</h2>
+                <table class="form-table">
+                    <tr>
+                        <th scope="row">Redirect URL</th>
+                        <td>
+                            <input type="url" name="redirect_url" value="<?php echo esc_attr($settings['redirect_url']); ?>" class="large-text" placeholder="<?php echo home_url(); ?>" />
+                            <p class="description">Redirect customers to this URL when they try to access checkout (leave empty for homepage)</p>
+                        </td>
+                    </tr>
                     
                     <tr>
                         <th scope="row">Disabled Message</th>
@@ -708,6 +857,27 @@ class Shipping_Event_Receiver {
                 
                 <?php submit_button('Save Settings'); ?>
             </form>
+            
+            <script>
+            jQuery(document).ready(function($) {
+                function toggleRestrictionFields() {
+                    var restrictionType = $('#restriction_type').val();
+                    $('#categories_row, #products_row').hide();
+                    
+                    if (restrictionType === 'categories') {
+                        $('#categories_row').show();
+                    } else if (restrictionType === 'products') {
+                        $('#products_row').show();
+                    }
+                }
+                
+                // Show/hide fields when dropdown changes
+                $('#restriction_type').on('change', toggleRestrictionFields);
+                
+                // Initialize on page load - show fields if needed
+                toggleRestrictionFields();
+            });
+            </script>
         </div>
         <?php
     }
@@ -782,7 +952,7 @@ class Shipping_Event_Receiver {
         
         ?>
         <div class="wrap">
-            <h1>Payment Gateway Control</h1>
+            <h1><span class="dashicons dashicons-money-alt"></span> Payment Gateway Control</h1>
             
             <div class="notice notice-info">
                 <p>
@@ -857,14 +1027,14 @@ class Shipping_Event_Receiver {
                         
                         <p class="submit">
                             <input type="submit" name="submit" class="button button-primary" value="Save Rule" />
-                            <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway'); ?>" class="button">Cancel</a>
+                            <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway'); ?>" class="button">Cancel</a>
                         </p>
                     </form>
                 </div>
             <?php else: ?>
                 <!-- Rules List Table -->
                 <p>
-                    <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway&action=add'); ?>" class="button button-primary">Add New Rule</a>
+                    <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway&action=add'); ?>" class="button button-primary">Add New Rule</a>
                 </p>
                 
                 <?php if (!empty($settings['rules'])): ?>
@@ -909,11 +1079,11 @@ class Shipping_Event_Receiver {
                                 ?>
                             </td>
                             <td>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule'); ?>" class="button button-small">Edit</a>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule'); ?>" class="button button-small">
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule'); ?>" class="button button-small">Edit</a>
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule'); ?>" class="button button-small">
                                     <?php echo $is_enabled ? 'Disable' : 'Enable'; ?>
                                 </a>
-                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=shipping-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule'); ?>" 
+                                <a href="<?php echo wp_nonce_url(admin_url('admin.php?page=wc-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule'); ?>" 
                                    class="button button-small" 
                                    onclick="return confirm('Are you sure you want to delete this rule?');">Delete</a>
                             </td>
@@ -923,99 +1093,11 @@ class Shipping_Event_Receiver {
                 </table>
                 <?php else: ?>
                 <div class="notice notice-warning">
-                    <p>No payment gateway rules configured yet. <a href="<?php echo admin_url('admin.php?page=shipping-payment-gateway&action=add'); ?>">Add your first rule</a>.</p>
+                    <p>No payment gateway rules configured yet. <a href="<?php echo admin_url('admin.php?page=wc-payment-gateway&action=add'); ?>">Add your first rule</a>.</p>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
-        <?php
-    }
-        <div class="wrap">
-            <h1>Payment Gateway Control</h1>
-            
-            <div class="notice notice-info">
-                <p>
-                    <strong>Total Rules:</strong> <?php echo $stats['total_rules']; ?> | 
-                    <strong>Active Currencies:</strong> <?php echo $stats['active_currencies']; ?> | 
-                    <strong>Available Gateways:</strong> <?php echo $stats['available_gateways']; ?>
-                </p>
-            </div>
-            
-            <form method="post" action="" id="payment-gateway-form">
-                <?php wp_nonce_field('ser_payment_gateway_save', 'ser_payment_gateway_nonce'); ?>
-                
-                <h2>Currency-Gateway Rules</h2>
-                <p>Configure which payment gateways should be available for selected currencies.</p>
-                
-                <div id="gateway-rules">
-                    <?php
-                    if (!empty($settings['rules'])) {
-                        foreach ($settings['rules'] as $index => $rule) {
-                            $this->render_gateway_rule_row($index, $rule, $currencies, $available_gateways);
-                        }
-                    } else {
-                        $this->render_gateway_rule_row(0, array('currencies' => array(), 'gateways' => array()), $currencies, $available_gateways);
-                    }
-                    ?>
-                </div>
-                
-                <p>
-                    <button type="button" class="button" id="add-rule">Add New Rule</button>
-                </p>
-                
-                <?php submit_button('Save Settings'); ?>
-            </form>
-        </div>
-        
-        <script>
-        jQuery(document).ready(function($) {
-            var ruleIndex = <?php echo !empty($settings['rules']) ? count($settings['rules']) : 1; ?>;
-            
-            $('#add-rule').on('click', function() {
-                var newRow = `
-                    <div class="gateway-rule" style="background: #f9f9f9; padding: 15px; margin-bottom: 10px; border: 1px solid #ddd;">
-                        <h3>Rule ${ruleIndex + 1} <button type="button" class="button remove-rule" style="float: right;">Remove</button></h3>
-                        <table class="form-table">
-                            <tr>
-                                <th>Currencies</th>
-                                <td>
-                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
-                                        <?php foreach ($currencies as $code => $name): ?>
-                                        <label style="display: block; margin: 5px 0;">
-                                            <input type="checkbox" name="rules[${ruleIndex}][currencies][]" value="<?php echo esc_attr($code); ?>" />
-                                            <?php echo esc_html($name); ?> (<?php echo esc_html($code); ?>)
-                                        </label>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <p class="description">Select one or more currencies for this rule</p>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Allowed Gateways</th>
-                                <td>
-                                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; background: #fff;">
-                                        <?php foreach ($available_gateways as $gateway_id => $gateway_name): ?>
-                                        <label style="display: block; margin: 5px 0;">
-                                            <input type="checkbox" name="rules[${ruleIndex}][gateways][]" value="<?php echo esc_attr($gateway_id); ?>" />
-                                            <?php echo esc_html($gateway_name); ?>
-                                        </label>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <p class="description">Select which payment gateways to show for the selected currencies</p>
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
-                `;
-                $('#gateway-rules').append(newRow);
-                ruleIndex++;
-            });
-            
-            $(document).on('click', '.remove-rule', function() {
-                $(this).closest('.gateway-rule').remove();
-            });
-        });
-        </script>
         <?php
     }
     
@@ -1213,6 +1295,20 @@ class Shipping_Event_Receiver {
             $ip = $_SERVER['REMOTE_ADDR'];
         }
         return sanitize_text_field($ip);
+    }
+    
+    /**
+     * Check if database table exists and create if not
+     */
+    public function check_database_table() {
+        global $wpdb;
+        
+        $table_name = $wpdb->prefix . $this->log_table;
+        
+        // Check if table exists
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            $this->create_log_table();
+        }
     }
     
     /**
