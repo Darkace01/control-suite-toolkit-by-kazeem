@@ -7,6 +7,8 @@ Stable tag: 1.2.7
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
+Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks.
+
 == Description ==
 
 Commerce Control Suite is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, and shipping event webhooks all from one powerful dashboard.

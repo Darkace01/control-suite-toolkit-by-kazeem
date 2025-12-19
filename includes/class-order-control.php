@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SER_Order_Control {
+class Commerce_Control_Suite_Order_Control {
     
     private $option_name = 'ser_order_control_settings';
     
@@ -162,7 +162,7 @@ class SER_Order_Control {
             $message = isset($settings['disabled_message']) ? $settings['disabled_message'] : 
                        __('Orders are currently disabled. Please try again later.', 'commerce-control-suite');
             
-            $errors->add('orders_disabled', $message);
+            $errors->add('orders_disabled', esc_html($message));
         }
     }
     
@@ -204,7 +204,7 @@ class SER_Order_Control {
             $redirect_url = isset($settings['redirect_url']) ? $settings['redirect_url'] : home_url();
             
             if (!empty($redirect_url)) {
-                wp_redirect($redirect_url);
+                wp_safe_redirect($redirect_url);
                 exit;
             }
         }

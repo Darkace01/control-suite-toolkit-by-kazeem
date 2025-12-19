@@ -22,25 +22,28 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin file constant
-if (!defined('SHIPPING_EVENT_RECEIVER_FILE')) {
-    define('SHIPPING_EVENT_RECEIVER_FILE', __FILE__);
+if (!defined('COMMERCE_CONTROL_SUITE_FILE')) {
+    define('COMMERCE_CONTROL_SUITE_FILE', __FILE__);
 }
 
 // Define plugin constants
-if (!defined('WC_CONTROL_SUITE_VERSION')) {
-    define('WC_CONTROL_SUITE_VERSION', '1.2.7');
+if (!defined('COMMERCE_CONTROL_SUITE_VERSION')) {
+    define('COMMERCE_CONTROL_SUITE_VERSION', '1.2.7');
 }
-if (!defined('WC_CONTROL_SUITE_PLUGIN_DIR')) {
-    define('WC_CONTROL_SUITE_PLUGIN_DIR', plugin_dir_path(__FILE__));
+if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_DIR')) {
+    define('COMMERCE_CONTROL_SUITE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 }
-if (!defined('WC_CONTROL_SUITE_PLUGIN_URL')) {
-    define('WC_CONTROL_SUITE_PLUGIN_URL', plugin_dir_url(__FILE__));
+if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_URL')) {
+    define('COMMERCE_CONTROL_SUITE_PLUGIN_URL', plugin_dir_url(__FILE__));
 }
 
 // Prevent duplicate class declaration
-if (!class_exists('Shipping_Event_Receiver')) {
+if (!class_exists('Commerce_Control_Suite')) {
 
-class Shipping_Event_Receiver {
+/**
+ * Main Plugin Class
+ */
+class Commerce_Control_Suite {
     
     private $log_table = 'shipping_event_logs';
     private $option_name = 'shipping_event_receiver_settings';
@@ -49,14 +52,14 @@ class Shipping_Event_Receiver {
     private $payment_gateway_control;
     
     public function __construct() {
-        $this->plugin_file = SHIPPING_EVENT_RECEIVER_FILE;
+        $this->plugin_file = COMMERCE_CONTROL_SUITE_FILE;
         
         // Load dependencies
         $this->load_dependencies();
         
         // Initialize sub-modules
-        $this->order_control = new SER_Order_Control();
-        $this->payment_gateway_control = new SER_Payment_Gateway_Control();
+        $this->order_control = new Commerce_Control_Suite_Order_Control();
+        $this->payment_gateway_control = new Commerce_Control_Suite_Payment_Gateway_Control();
         
         // Register REST API endpoint
         add_action('rest_api_init', array($this, 'register_endpoint'));
@@ -104,7 +107,7 @@ class Shipping_Event_Receiver {
                 $new_page = $old_to_new[$current_page];
                 $redirect_url = add_query_arg('page', $new_page, admin_url('admin.php'));
                 wp_safe_remote_get($redirect_url);
-                wp_redirect($redirect_url);
+                wp_safe_redirect($redirect_url);
                 exit;
             }
         }
@@ -220,7 +223,7 @@ class Shipping_Event_Receiver {
      * Render settings section info
      */
     public function render_section_info() {
-        echo '<p>Configure your shipping webhook endpoint settings.</p>';
+        echo '<p>' . esc_html__('Configure your shipping webhook endpoint settings.', 'commerce-control-suite') . '</p>';
     }
     
     /**
@@ -231,7 +234,7 @@ class Shipping_Event_Receiver {
         $endpoint = isset($settings['endpoint_slug']) ? $settings['endpoint_slug'] : 'shipping-webhook';
         $full_url = rest_url('shipping/v1/' . $endpoint);
         
-        echo '<input type="text" name="' . $this->option_name . '[endpoint_slug]" value="' . esc_attr($endpoint) . '" class="regular-text" />';
+        echo '<input type="text" name="' . esc_attr($this->option_name) . '[endpoint_slug]" value="' . esc_attr($endpoint) . '" class="regular-text" />';
         echo '<p class="description">Enter the endpoint slug (e.g., "shipping-webhook"). The full URL will be: <br><strong>' . esc_url($full_url) . '</strong></p>';
     }
     
@@ -243,14 +246,16 @@ class Shipping_Event_Receiver {
             return;
         }
         
-        global $wpdb;
-        $log_table = $wpdb->prefix . $this->log_table;
-        
         // Get statistics
-        $total_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table");
-        $success_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE status = 'success'");
-        $error_logs = $wpdb->get_var("SELECT COUNT(*) FROM $log_table WHERE status = 'error'");
-        $recent_logs = $wpdb->get_results("SELECT * FROM $log_table ORDER BY created_at DESC LIMIT 5");
+        $log_table = $wpdb->prefix . $this->log_table;
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $total_logs = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $log_table ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $success_logs = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE status = 'success'", $log_table ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $error_logs = $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE status = 'error'", $log_table ) );
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $recent_logs = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY created_at DESC LIMIT 5", $log_table ) );
         
         $order_stats = $this->order_control->get_statistics();
         $payment_stats = $this->payment_gateway_control->get_statistics();
@@ -271,7 +276,7 @@ class Shipping_Event_Receiver {
                     <p><strong>URL:</strong></p>
                     <input type="text" value="<?php echo esc_url($full_url); ?>" readonly class="large-text" style="background: #f5f5f5;" />
                     <p style="margin-top: 10px;">
-                        <a href="<?php echo admin_url('admin.php?page=commerce-event-logs'); ?>" class="button">View Logs</a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-event-logs')); ?>" class="button">View Logs</a>
                     </p>
                 </div>
                 
@@ -282,18 +287,18 @@ class Shipping_Event_Receiver {
                     <p><strong>Success:</strong> <span style="color: green;"><?php echo number_format($success_logs); ?></span></p>
                     <p><strong>Errors:</strong> <span style="color: red;"><?php echo number_format($error_logs); ?></span></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=commerce-event-logs'); ?>" class="button">View All Logs</a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-event-logs')); ?>" class="button">View All Logs</a>
                     </p>
                 </div>
                 
                 <!-- Order Control Stats -->
                 <div class="dashboard-widget" style="background: #fff; padding: 20px; border: 1px solid #ccc; border-radius: 5px;">
                     <h2 style="margin-top: 0;"><span class="dashicons dashicons-cart" style="color: #2271b1;"></span> Order Control</h2>
-                    <p><strong>Status:</strong> <span style="color: <?php echo $order_stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo ucfirst($order_stats['current_status']); ?></span></p>
+                    <p><strong>Status:</strong> <span style="color: <?php echo $order_stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo esc_html(ucfirst($order_stats['current_status'])); ?></span></p>
                     <p><strong>Orders Enabled:</strong> <?php echo $order_stats['orders_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p><strong>Timeframe Enabled:</strong> <?php echo $order_stats['timeframe_enabled'] ? 'Yes' : 'No'; ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=commerce-order-control'); ?>" class="button">Manage Orders</a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-order-control')); ?>" class="button">Manage Orders</a>
                     </p>
                 </div>
                 
@@ -304,7 +309,7 @@ class Shipping_Event_Receiver {
                     <p><strong>Active Currencies:</strong> <?php echo number_format($payment_stats['active_currencies']); ?></p>
                     <p><strong>Available Gateways:</strong> <?php echo number_format($payment_stats['available_gateways']); ?></p>
                     <p>
-                        <a href="<?php echo admin_url('admin.php?page=commerce-payment-gateway'); ?>" class="button">Manage Gateways</a>
+                        <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-payment-gateway')); ?>" class="button">Manage Gateways</a>
                     </p>
                 </div>
             </div>
@@ -369,7 +374,7 @@ class Shipping_Event_Receiver {
                 <?php
                 settings_fields($this->option_name);
                 do_settings_sections('commerce-control-suite');
-                submit_button('Save Settings');
+                submit_button(__('Save Settings', 'commerce-control-suite'));
                 ?>
             </form>
             
@@ -388,10 +393,11 @@ class Shipping_Event_Receiver {
         global $wpdb;
         
         $table_name = $wpdb->prefix . $this->log_table;
-        $logs = $wpdb->get_results("SELECT * FROM $table_name ORDER BY created_at DESC LIMIT 20");
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $logs = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY created_at DESC LIMIT 20", $table_name ) );
         
         if (empty($logs)) {
-            echo '<p>No logs found yet.</p>';
+            echo '<p>' . esc_html__('No logs found yet.', 'commerce-control-suite') . '</p>';
             return;
         }
         
@@ -598,7 +604,7 @@ class Shipping_Event_Receiver {
                     data: {
                         action: 'get_log_details',
                         log_id: logId,
-                        nonce: '<?php echo wp_create_nonce('shipping_event_logs'); ?>'
+                        nonce: '<?php echo esc_js(wp_create_nonce('shipping_event_logs')); ?>'
                     },
                     success: function(response) {
                         if (response.success) {
@@ -693,11 +699,10 @@ class Shipping_Event_Receiver {
                 'restriction_type' => sanitize_text_field($_POST['restriction_type']),
                 'restricted_categories' => isset($_POST['restricted_categories']) ? array_map('intval', $_POST['restricted_categories']) : array(),
                 'restricted_products' => isset($_POST['restricted_products']) ? array_map('intval', $_POST['restricted_products']) : array(),
-                'redirect_url' => esc_url_raw($_POST['redirect_url']),
-                'disabled_message' => sanitize_textarea_field($_POST['disabled_message'])
+                'disabled_message' => isset($_POST['disabled_message']) ? sanitize_textarea_field(wp_unslash($_POST['disabled_message'])) : ''
             );
             $this->order_control->update_settings($settings);
-            echo '<div class="notice notice-success"><p>Settings saved successfully!</p></div>';
+            echo '<div class="notice notice-success"><p>' . esc_html__('Settings saved successfully!', 'commerce-control-suite') . '</p></div>';
         }
         
         $settings = $this->order_control->get_settings();
@@ -712,7 +717,7 @@ class Shipping_Event_Receiver {
             <h1><span class="dashicons dashicons-cart"></span> Order Control Settings</h1>
             
             <div class="notice notice-info">
-                <p><strong>Current Status:</strong> <span style="color: <?php echo $stats['current_status'] === 'active' ? 'green' : 'red'; ?>; font-weight: bold;"><?php echo ucfirst($stats['current_status']); ?></span></p>
+                <p><strong>' . esc_html__('Current Status:', 'commerce-control-suite') . '</strong> <span style="color: ' . ($stats['current_status'] === 'active' ? 'green' : 'red') . '; font-weight: bold;">' . esc_html(ucfirst($stats['current_status'])) . '</span></p>
             </div>
             
             <form method="post" action="">
@@ -842,8 +847,8 @@ class Shipping_Event_Receiver {
                     <tr>
                         <th scope="row">Redirect URL</th>
                         <td>
-                            <input type="url" name="redirect_url" value="<?php echo esc_attr($settings['redirect_url']); ?>" class="large-text" placeholder="<?php echo home_url(); ?>" />
-                            <p class="description">Redirect customers to this URL when they try to access checkout (leave empty for homepage)</p>
+                            <input type="url" name="redirect_url" value="<?php echo esc_attr($settings['redirect_url']); ?>" class="large-text" placeholder="<?php echo esc_url(home_url()); ?>" />
+                            <p class="description"><?php esc_html_e('Redirect customers to this URL when they try to access checkout (leave empty for homepage)', 'commerce-control-suite'); ?></p>
                         </td>
                     </tr>
                     
@@ -892,37 +897,37 @@ class Shipping_Event_Receiver {
         }
         
         // Handle delete action
-        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['rule_id']) && wp_verify_nonce($_GET['_wpnonce'], 'delete_rule')) {
+        if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['rule_id']) && isset($_GET['_wpnonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'delete_rule')) {
             $settings = $this->payment_gateway_control->get_settings();
             $rule_id = intval($_GET['rule_id']);
             if (isset($settings['rules'][$rule_id])) {
                 unset($settings['rules'][$rule_id]);
                 $settings['rules'] = array_values($settings['rules']); // Reindex array
                 $this->payment_gateway_control->update_settings($settings);
-                echo '<div class="notice notice-success"><p>Rule deleted successfully!</p></div>';
+                echo '<div class="notice notice-success"><p>' . esc_html__('Rule deleted successfully!', 'commerce-control-suite') . '</p></div>';
             }
         }
         
         // Handle toggle enabled/disabled
-        if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['rule_id']) && wp_verify_nonce($_GET['_wpnonce'], 'toggle_rule')) {
+        if (isset($_GET['action']) && $_GET['action'] === 'toggle' && isset($_GET['rule_id']) && isset($_GET['_wpnonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_GET['_wpnonce'])), 'toggle_rule')) {
             $settings = $this->payment_gateway_control->get_settings();
             $rule_id = intval($_GET['rule_id']);
             if (isset($settings['rules'][$rule_id])) {
                 $settings['rules'][$rule_id]['enabled'] = !isset($settings['rules'][$rule_id]['enabled']) || $settings['rules'][$rule_id]['enabled'] ? false : true;
                 $this->payment_gateway_control->update_settings($settings);
-                echo '<div class="notice notice-success"><p>Rule status updated!</p></div>';
+                echo '<div class="notice notice-success"><p>' . esc_html__('Rule status updated!', 'commerce-control-suite') . '</p></div>';
             }
         }
         
         // Handle add/edit rule submission
-        if (isset($_POST['ser_payment_gateway_rule_nonce']) && wp_verify_nonce($_POST['ser_payment_gateway_rule_nonce'], 'ser_payment_gateway_rule_save')) {
+        if (isset($_POST['ser_payment_gateway_rule_nonce']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ser_payment_gateway_rule_nonce'])), 'ser_payment_gateway_rule_save')) {
             $settings = $this->payment_gateway_control->get_settings();
             
             $rule = array(
-                'currencies' => isset($_POST['currencies']) ? array_map('sanitize_text_field', $_POST['currencies']) : array(),
-                'gateways' => isset($_POST['gateways']) ? array_map('sanitize_text_field', $_POST['gateways']) : array(),
+                'currencies' => isset($_POST['currencies']) ? array_map('sanitize_text_field', wp_unslash($_POST['currencies'])) : array(),
+                'gateways' => isset($_POST['gateways']) ? array_map('sanitize_text_field', wp_unslash($_POST['gateways'])) : array(),
                 'enabled' => isset($_POST['enabled']) ? true : false,
-                'name' => sanitize_text_field($_POST['rule_name'])
+                'name' => isset($_POST['rule_name']) ? sanitize_text_field(wp_unslash($_POST['rule_name'])) : ''
             );
             
             if (isset($_POST['rule_id']) && $_POST['rule_id'] !== '') {
@@ -938,7 +943,7 @@ class Shipping_Event_Receiver {
             }
             
             $this->payment_gateway_control->update_settings($settings);
-            echo '<div class="notice notice-success"><p>Rule saved successfully!</p></div>';
+            echo '<div class="notice notice-success"><p>' . esc_html__('Rule saved successfully!', 'commerce-control-suite') . '</p></div>';
         }
         
         $settings = $this->payment_gateway_control->get_settings();
@@ -957,9 +962,9 @@ class Shipping_Event_Receiver {
             
             <div class="notice notice-info">
                 <p>
-                    <strong>Total Rules:</strong> <?php echo $stats['total_rules']; ?> | 
-                    <strong>Active Currencies:</strong> <?php echo $stats['active_currencies']; ?> | 
-                    <strong>Available Gateways:</strong> <?php echo $stats['available_gateways']; ?>
+                    <strong>' . esc_html__('Total Rules:', 'commerce-control-suite') . '</strong> ' . esc_html($stats['total_rules']) . ' | 
+                    <strong>' . esc_html__('Active Currencies:', 'commerce-control-suite') . '</strong> ' . esc_html($stats['active_currencies']) . ' | 
+                    <strong>' . esc_html__('Available Gateways:', 'commerce-control-suite') . '</strong> ' . esc_html($stats['available_gateways']) . '
                 </p>
             </div>
             
@@ -971,7 +976,7 @@ class Shipping_Event_Receiver {
                     <form method="post" action="">
                         <?php wp_nonce_field('ser_payment_gateway_rule_save', 'ser_payment_gateway_rule_nonce'); ?>
                         <?php if ($edit_rule_id !== null && $_GET['action'] === 'edit'): ?>
-                            <input type="hidden" name="rule_id" value="<?php echo $edit_rule_id; ?>" />
+                            <input type="hidden" name="rule_id" value="<?php echo esc_attr($edit_rule_id); ?>" />
                         <?php endif; ?>
                         
                         <table class="form-table">
@@ -1053,7 +1058,7 @@ class Shipping_Event_Receiver {
                     <tbody>
                         <?php foreach ($settings['rules'] as $index => $rule): ?>
                         <tr>
-                            <td><?php echo ($index + 1); ?></td>
+                            <td><?php echo esc_html($index + 1); ?></td>
                             <td><strong><?php echo esc_html(isset($rule['name']) ? $rule['name'] : 'Rule ' . ($index + 1)); ?></strong></td>
                             <td>
                                 <?php 
@@ -1076,7 +1081,7 @@ class Shipping_Event_Receiver {
                             <td>
                                 <?php 
                                 $is_enabled = !isset($rule['enabled']) || $rule['enabled'];
-                                echo $is_enabled ? '<span style="color: green;">●</span> Enabled' : '<span style="color: red;">●</span> Disabled';
+                                echo $is_enabled ? '<span style="color: green;">●</span> ' . esc_html__('Enabled', 'commerce-control-suite') : '<span style="color: red;">●</span> ' . esc_html__('Disabled', 'commerce-control-suite');
                                 ?>
                             </td>
                             <td>
@@ -1307,7 +1312,8 @@ class Shipping_Event_Receiver {
         $table_name = $wpdb->prefix . $this->log_table;
         
         // Check if table exists
-        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+        // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        if ($wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) != $table_name) {
             $this->create_log_table();
         }
     }
@@ -1350,15 +1356,15 @@ function shipping_event_receiver_init() {
         add_action('admin_notices', function() {
             ?>
             <div class="notice notice-error is-dismissible">
-                <p><?php _e('Commerce Control Suite requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
+                <p><?php esc_html_e('Commerce Control Suite requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
             </div>
             <?php
         });
         return;
     }
 
-    if (!isset($GLOBALS['shipping_event_receiver_instance']) && class_exists('Shipping_Event_Receiver')) {
-        $GLOBALS['shipping_event_receiver_instance'] = new Shipping_Event_Receiver();
+    if (!isset($GLOBALS['commerce_control_suite_instance']) && class_exists('Commerce_Control_Suite')) {
+        $GLOBALS['commerce_control_suite_instance'] = new Commerce_Control_Suite();
     }
 }
 

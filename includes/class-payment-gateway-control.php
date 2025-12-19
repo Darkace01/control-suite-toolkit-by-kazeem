@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class SER_Payment_Gateway_Control {
+class Commerce_Control_Suite_Payment_Gateway_Control {
     
     private $option_name = 'ser_payment_gateway_settings';
     
