@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Commerce Control Suite
- * Plugin URI: https://github.com/Darkace01/wooCommerce-control-suite
+ * Plugin URI: https://github.com/Darkace01/ommerce-control-suite
  * Description: Complete control suite for WooCommerce - manage order restrictions, payment gateway rules, and shipping event webhooks
  * Version: 1.2.7
  * Author: Kazeem Quadri
