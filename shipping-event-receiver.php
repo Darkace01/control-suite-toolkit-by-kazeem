@@ -1457,8 +1457,6 @@ class CommerceControlSuite {
     }
 }
 
-} // End if class_exists check
-
 // Initialize the plugin only once
 function shipping_event_receiver_init() {
     // Check if WooCommerce is active
