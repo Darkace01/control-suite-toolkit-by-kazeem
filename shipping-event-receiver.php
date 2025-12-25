@@ -38,6 +38,7 @@ if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_URL')) {
 }
 
 // Prevent duplicate class declaration
+if (!class_exists('CommerceControlSuite')) {
 class CommerceControlSuite {
     
     const PAGE_DASHBOARD = 'commerce-control-suite';
@@ -1456,9 +1457,11 @@ class CommerceControlSuite {
         wp_cache_delete( 'table_exists_' . $tableName, 'commerce_control_suite_schema' );
     }
 }
+} // End if class_exists check
 
 // Initialize the plugin only once
-function shipping_event_receiver_init() {
+if (!function_exists('commerce_control_suite_init')) {
+function commerce_control_suite_init() {
     // Check if WooCommerce is active
     if (!class_exists('WooCommerce')) {
         add_action('admin_notices', function() {
@@ -1475,6 +1478,7 @@ function shipping_event_receiver_init() {
         $GLOBALS['commerceControlSuiteInstance'] = new CommerceControlSuite();
     }
 }
+}
 
 // Always run initialization on plugins_loaded
-add_action('plugins_loaded', 'shipping_event_receiver_init');
+add_action('plugins_loaded', 'commerce_control_suite_init');
