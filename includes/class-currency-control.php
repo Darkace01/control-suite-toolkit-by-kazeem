@@ -5,26 +5,26 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * Class CommerceControlSuiteCurrencyControl
+ * Class Commerce_Control_Suite_Currency_Control
  *
  * Handles currency switching, rates, and product-specific pricing.
  */
-class CommerceControlSuiteCurrencyControl {
+class Commerce_Control_Suite_Currency_Control {
 
     /**
      * The single instance of the class.
      *
-     * @var CommerceControlSuiteCurrencyControl
+     * @var Commerce_Control_Suite_Currency_Control
      */
     protected static $_instance = null;
 
     /**
-     * Main CommerceControlSuiteCurrencyControl Instance.
+     * Main Commerce_Control_Suite_Currency_Control Instance.
      *
-     * Ensures only one instance of CommerceControlSuiteCurrencyControl is loaded or can be loaded.
+     * Ensures only one instance of Commerce_Control_Suite_Currency_Control is loaded or can be loaded.
      *
      * @static
-     * @return CommerceControlSuiteCurrencyControl - Main instance.
+     * @return Commerce_Control_Suite_Currency_Control - Main instance.
      */
     public static function instance() {
         if (is_null(self::$_instance)) {
@@ -37,7 +37,7 @@ class CommerceControlSuiteCurrencyControl {
     private $settings;
 
     /**
-     * CommerceControlSuiteCurrencyControl Constructor.
+     * Commerce_Control_Suite_Currency_Control Constructor.
      */
     public function __construct() {
         add_action('admin_init', array($this, 'registerSettings'));
@@ -144,7 +144,7 @@ class CommerceControlSuiteCurrencyControl {
      */
     public function add_product_currency_metabox() {
         add_meta_box(
-            'commerce-control-suite-currency-prices',
+            'control-suite-woocommerce-currency-prices',
             'Currency Pricing',
             array($this, 'render_product_currency_metabox'),
             'product',
@@ -186,7 +186,7 @@ class CommerceControlSuiteCurrencyControl {
      * @param int $post_id
      */
     public function save_product_currency_prices($post_id) {
-        if (!isset($_POST['commerce_control_suite_currency_prices_nonce']) || !wp_verify_nonce($_POST['commerce_control_suite_currency_prices_nonce'], 'commerce_control_suite_save_currency_prices')) {
+        if (!isset($_POST['commerce_control_suite_currency_prices_nonce']) || !wp_verify_nonce(sanitize_key(wp_unslash($_POST['commerce_control_suite_currency_prices_nonce'])), 'commerce_control_suite_save_currency_prices')) {
             return;
         }
 
@@ -200,7 +200,8 @@ class CommerceControlSuiteCurrencyControl {
 
         if (isset($_POST['currency_prices']) && is_array($_POST['currency_prices'])) {
             $prices = array();
-            foreach ($_POST['currency_prices'] as $code => $price) {
+            // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+            foreach (array_map('wc_clean', wp_unslash($_POST['currency_prices'])) as $code => $price) {
                 $prices[sanitize_key($code)] = wc_format_decimal($price);
             }
             update_post_meta($post_id, '_currency_prices', $prices);
@@ -220,13 +221,15 @@ class CommerceControlSuiteCurrencyControl {
      * Set currency from URL.
      */
     public function set_currency_from_url() {
+        // phpcs:disable WordPress.Security.NonceVerification.Recommended
         if (isset($_GET['currency'])) {
-            $currency = sanitize_text_field($_GET['currency']);
+            $currency = sanitize_text_field(wp_unslash($_GET['currency']));
             $available_currencies = $this->get_available_currencies();
             if (array_key_exists($currency, $available_currencies)) {
                 $_SESSION['commerce_control_suite_currency'] = $currency;
             }
         }
+        // phpcs:enable WordPress.Security.NonceVerification.Recommended
     }
 
     /**
@@ -286,14 +289,14 @@ class CommerceControlSuiteCurrencyControl {
             'currency_control_general',
             'General Settings',
             null,
-            'commerce-currency-control'
+            'control-suite-woocommerce-currency-control'
         );
 
         add_settings_field(
             'enable_currency_switcher',
             'Enable Currency Switcher',
             array($this, 'renderEnableField'),
-            'commerce-currency-control',
+            'control-suite-woocommerce-currency-control',
             'currency_control_general'
         );
 
@@ -301,7 +304,7 @@ class CommerceControlSuiteCurrencyControl {
             'default_currency',
             'Default Currency',
             array($this, 'renderDefaultCurrencyField'),
-            'commerce-currency-control',
+            'control-suite-woocommerce-currency-control',
             'currency_control_general'
         );
 
@@ -309,14 +312,14 @@ class CommerceControlSuiteCurrencyControl {
             'currency_control_rates',
             'Currency Rates',
             null,
-            'commerce-currency-control'
+            'control-suite-woocommerce-currency-control'
         );
 
         add_settings_field(
             'currencies',
             'Currencies',
             array($this, 'renderCurrenciesField'),
-            'commerce-currency-control',
+            'control-suite-woocommerce-currency-control',
             'currency_control_rates'
         );
     }
@@ -331,7 +334,7 @@ class CommerceControlSuiteCurrencyControl {
             <form method="post" action="options.php">
                 <?php
                 settings_fields($this->option_name);
-                do_settings_sections('commerce-currency-control');
+                do_settings_sections('control-suite-woocommerce-currency-control');
                 submit_button();
                 ?>
             </form>

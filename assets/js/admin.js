@@ -12,12 +12,12 @@ jQuery(document).ready(function($) {
         
         // Make AJAX request
         $.ajax({
-            url: commerceControlSuiteAdmin.ajax_url,
+            url: Commerce_Control_Suite_Admin.ajax_url,
             type: 'POST',
             data: {
                 action: 'commerce_control_suite_get_log_details',
                 log_id: logId,
-                nonce: commerceControlSuiteAdmin.nonce
+                nonce: Commerce_Control_Suite_Admin.nonce
             },
             success: function(response) {
                 if (response.success) {

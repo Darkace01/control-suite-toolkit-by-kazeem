@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class CommerceControlSuitePaymentGatewayControl {
+class Commerce_Control_Suite_Payment_Gateway_Control {
     
     private $optionName = 'ser_payment_gateway_settings';
     
@@ -25,7 +25,7 @@ class CommerceControlSuitePaymentGatewayControl {
         }
         
         $settings = $this->getSettings();
-        $currentCurrency = CommerceControlSuiteCurrencyControl::instance()->get_current_currency();
+        $currentCurrency = Commerce_Control_Suite_Currency_Control::instance()->get_current_currency();
         
         if (empty($settings['rules']) || !is_array($settings['rules'])) {
             return $availableGateways;
@@ -83,7 +83,7 @@ class CommerceControlSuitePaymentGatewayControl {
      */
     public function getActiveCurrencies() {
         $all_currencies = get_woocommerce_currencies();
-        $active_currencies_codes = CommerceControlSuiteCurrencyControl::instance()->get_available_currencies();
+        $active_currencies_codes = Commerce_Control_Suite_Currency_Control::instance()->get_available_currencies();
         
         $active = array();
         foreach ($active_currencies_codes as $code) {

@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class CommerceControlSuiteOrderControl {
+class Commerce_Control_Suite_Order_Control {
     
     private $optionName = 'ser_order_control_settings';
     

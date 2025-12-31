@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: Commerce Control Suite
+ * Plugin Name: Control Suite For Woocommerce
  * Plugin URI: https://github.com/Darkace01/commerce-control-suite
  * Description: Comprehensive control suite for WooCommerce to manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching.
  * Version: 1.2.7
@@ -38,14 +38,14 @@ if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_URL')) {
 }
 
 // Prevent duplicate class declaration
-if (!class_exists('CommerceControlSuite')) {
-class CommerceControlSuite {
+if (!class_exists('Commerce_Control_Suite')) {
+class Commerce_Control_Suite {
     
     const PAGE_DASHBOARD = 'commerce-control-suite';
-    const PAGE_LOGS = 'commerce-event-logs';
-    const PAGE_ORDER_CONTROL = 'commerce-order-control';
-    const PAGE_PAYMENT_GATEWAY = 'commerce-payment-gateway';
-    const PAGE_CURRENCY_CONTROL = 'commerce-currency-control';
+    const PAGE_LOGS = 'commerce-control-suite-logs';
+    const PAGE_ORDER_CONTROL = 'commerce-control-suite-order-control';
+    const PAGE_PAYMENT_GATEWAY = 'commerce-control-suite-payment-gateway';
+    const PAGE_CURRENCY_CONTROL = 'commerce-control-suite-currency-control';
     
     const LABEL_ORDER_CONTROL = 'Order Control';
     const LABEL_PAYMENT_GATEWAY = 'Payment Gateway';
@@ -65,9 +65,9 @@ class CommerceControlSuite {
         $this->loadDependencies();
         
         // Initialize sub-modules
-        $this->orderControl = new CommerceControlSuiteOrderControl();
-        $this->paymentGatewayControl = new CommerceControlSuitePaymentGatewayControl();
-		$this->currencyControl = CommerceControlSuiteCurrencyControl::instance();
+        $this->orderControl = new Commerce_Control_Suite_Order_Control();
+        $this->paymentGatewayControl = new Commerce_Control_Suite_Payment_Gateway_Control();
+		$this->currencyControl = Commerce_Control_Suite_Currency_Control::instance();
         
         // Register REST API endpoint
         add_action('rest_api_init', array($this, 'registerEndpoint'));
@@ -104,7 +104,7 @@ class CommerceControlSuite {
         wp_enqueue_style('commerce-control-suite-admin', plugins_url('assets/css/admin.css', $this->pluginFile), array(), COMMERCE_CONTROL_SUITE_VERSION);
         wp_enqueue_script('commerce-control-suite-admin', plugins_url('assets/js/admin.js', $this->pluginFile), array('jquery'), COMMERCE_CONTROL_SUITE_VERSION, true);
 
-        wp_localize_script('commerce-control-suite-admin', 'commerceControlSuiteAdmin', array(
+        wp_localize_script('commerce-control-suite-admin', 'Commerce_Control_Suite_Admin', array(
             'ajax_url' => admin_url('admin-ajax.php'),
             'nonce'    => wp_create_nonce('shipping_event_logs')
         ));
@@ -126,7 +126,11 @@ class CommerceControlSuite {
                 'shipping-event-receiver' => self::PAGE_DASHBOARD,
                 'shipping-event-logs' => self::PAGE_LOGS,
                 'shipping-order-control' => self::PAGE_ORDER_CONTROL,
-                'shipping-payment-gateway' => self::PAGE_PAYMENT_GATEWAY
+                'shipping-payment-gateway' => self::PAGE_PAYMENT_GATEWAY,
+                'commerce-event-logs' => self::PAGE_LOGS,
+                'commerce-order-control' => self::PAGE_ORDER_CONTROL,
+                'commerce-payment-gateway' => self::PAGE_PAYMENT_GATEWAY,
+                'commerce-currency-control' => self::PAGE_CURRENCY_CONTROL
             );
             
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -156,8 +160,8 @@ class CommerceControlSuite {
         
         // Add top-level menu in sidebar
         add_menu_page(
-            'Commerce Control Suite',
-            'Commerce Control Suite',
+            'Control Suite For Woocommerce',
+            'Control Suite For Woocommerce',
             'manage_options',
             self::PAGE_DASHBOARD,
             array($this, 'renderDashboardPage'),
@@ -326,7 +330,7 @@ class CommerceControlSuite {
         
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e('Commerce Control Suite - Dashboard', 'commerce-control-suite'); ?></h1>
+            <h1><?php esc_html_e('Control Suite For Woocommerce - Dashboard', 'commerce-control-suite'); ?></h1>
             
             <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
                 
@@ -891,14 +895,14 @@ class CommerceControlSuite {
                         
                         <p class="submit">
                             <input type="submit" name="submit" class="button button-primary" value="Save Rule" />
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-payment-gateway')); ?>" class="button">Cancel</a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway')); ?>" class="button">Cancel</a>
                         </p>
                     </form>
                 </div>
             <?php else: ?>
                 <!-- Rules List Table -->
                 <p>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-payment-gateway&action=add')); ?>" class="button button-primary">Add New Rule</a>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=add')); ?>" class="button button-primary">Add New Rule</a>
                 </p>
                 
                 <?php if (!empty($settings['rules'])): ?>
@@ -943,11 +947,11 @@ class CommerceControlSuite {
                                 ?>
                             </td>
                             <td>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule')); ?>" class="button button-small">Edit</a>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule')); ?>" class="button button-small">
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule')); ?>" class="button button-small">Edit</a>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule')); ?>" class="button button-small">
                                     <?php echo $is_enabled ? 'Disable' : 'Enable'; ?>
                                 </a>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule')); ?>" 
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule')); ?>" 
                                    class="button button-small" 
                                    onclick="return confirm('Are you sure you want to delete this rule?');">Delete</a>
                             </td>
@@ -957,7 +961,7 @@ class CommerceControlSuite {
                 </table>
                 <?php else: ?>
                 <div class="notice notice-warning">
-                    <p>No payment gateway rules configured yet. <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-payment-gateway&action=add')); ?>">Add your first rule</a>.</p>
+                    <p>No payment gateway rules configured yet. <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=add')); ?>">Add your first rule</a>.</p>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -1168,7 +1172,7 @@ class CommerceControlSuite {
         }
         
         // Hook for custom actions
-        do_action('shipping_event_received', $data);
+        do_action('commerce_control_suite_shipping_event_received', $data);
         
         return array(
             'order_id' => $orderId,
@@ -1304,15 +1308,15 @@ function commerce_control_suite_init() {
         add_action('admin_notices', function() {
             ?>
             <div class="notice notice-error is-dismissible">
-                <p><?php esc_html_e('Commerce Control Suite requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
+                <p><?php esc_html_e('Control Suite For Woocommerce requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
             </div>
             <?php
         });
         return;
     }
 
-    if (!isset($GLOBALS['commerceControlSuiteInstance']) && class_exists('CommerceControlSuite')) {
-        $GLOBALS['commerceControlSuiteInstance'] = new CommerceControlSuite();
+    if (!isset($GLOBALS['Commerce_Control_SuiteInstance']) && class_exists('Commerce_Control_Suite')) {
+        $GLOBALS['Commerce_Control_SuiteInstance'] = new Commerce_Control_Suite();
     }
 }
 }
