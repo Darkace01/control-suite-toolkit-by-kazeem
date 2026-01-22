@@ -8,9 +8,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Commerce_Control_Suite_Order_Control {
+class Control_Suite_Toolkit_Order_Control {
     
-    private $optionName = 'ser_order_control_settings';
+    private $optionName = 'cst_order_control_settings';
     
     public function __construct() {
         add_action('woocommerce_after_checkout_validation', array($this, 'validateOrderSubmission'), 10, 2);

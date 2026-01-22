@@ -1,6 +1,7 @@
-=== Control Suite For Woocommerce ===
+=== Control Suite Toolkit ===
 Contributors: kazeemquadri
 Tags: woocommerce, order control, payment gateway, shipping, webhooks
+Plugin URI: https://github.com/Darkace01/control-suite-toolkit
 Requires at least: 6.2
 Tested up to: 6.9
 Stable tag: 1.2.7
@@ -11,7 +12,7 @@ Manage WooCommerce order restrictions, payment gateway rules, shipping event web
 
 == Description ==
 
-Control Suite For Woocommerce is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching all from one powerful dashboard.
+Control Suite Toolkit is a comprehensive WordPress plugin that gives you complete control over your WooCommerce store operations. Manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching all from one powerful dashboard.
 
 == Features ==
 
@@ -54,16 +55,16 @@ Control Suite For Woocommerce is a comprehensive WordPress plugin that gives you
 
 == Installation ==
 
-1. Upload the plugin files to `/wp-content/plugins/control-suite-woocommerce/`
+1. Upload the plugin files to `/wp-content/plugins/control-suite-toolkit/`
 2. Activate the plugin through the 'Plugins' menu in WordPress
-3. Navigate to **Control Suite For Woocommerce** in the WordPress admin menu
+3. Navigate to **Control Suite Toolkit** in the WordPress admin menu
 4. Configure your settings in each section
 
 == Configuration ==
 
 ### Order Control Settings
 
-1. Go to **Control Suite For Woocommerce > Order Control**
+1. Go to **Control Suite Toolkit > Order Control**
 2. Enable/disable order placement
 3. Choose restriction type (All Products, Categories, or Specific Products)
 4. Set time restrictions if needed
@@ -73,7 +74,7 @@ Control Suite For Woocommerce is a comprehensive WordPress plugin that gives you
 
 ### Payment Gateway Control
 
-1. Go to **Control Suite For Woocommerce > Payment Gateway**
+1. Go to **Control Suite Toolkit > Payment Gateway**
 2. Click **Add New Rule**
 3. Give your rule a name
 4. Select currencies for the rule
@@ -83,7 +84,7 @@ Control Suite For Woocommerce is a comprehensive WordPress plugin that gives you
 
 ### Shipping Webhooks
 
-1. Go to **Control Suite For Woocommerce > Event Logs**
+1. Go to **Control Suite Toolkit > Event Logs**
 2. Configure your webhook endpoint slug
 3. Copy the webhook URL
 4. Provide it to your shipping platform
@@ -128,6 +129,8 @@ You can implement additional security by:
 
 ### 1.2.7
 
+- Renamed plugin to "Control Suite Toolkit"
+- Updated text domain to `control-suite-toolkit`
 - Added advanced currency switching features.
 - Fixed "Trying to access array offset on null" warning on fresh installations.
 - Added strict dependency check for WooCommerce to prevent fatal errors.
@@ -137,7 +140,6 @@ You can implement additional security by:
 ### 1.2.1
 
 - Renamed plugin to "Control Suite For Woocommerce"
-- Updated text domain to `control-suite-woocommerce`
 - Added dashicons to admin pages
 - Improved UI/UX with visual indicators
 

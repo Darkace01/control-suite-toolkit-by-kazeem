@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Control Suite For Woocommerce
- * Plugin URI: https://github.com/Darkace01/control-suite-woocommerce
+ * Plugin Name: Control Suite Toolkit
+ * Plugin URI: https://github.com/Darkace01/control-suite-toolkit
  * Description: Comprehensive control suite for WooCommerce to manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching.
  * Version: 1.2.7
  * Author: Kazeem Quadri
@@ -22,52 +22,52 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin file constant
-if (!defined('COMMERCE_CONTROL_SUITE_FILE')) {
-    define('COMMERCE_CONTROL_SUITE_FILE', __FILE__);
+if (!defined('CONTROL_SUITE_TOOLKIT_FILE')) {
+    define('CONTROL_SUITE_TOOLKIT_FILE', __FILE__);
 }
 
 // Define plugin constants
-if (!defined('COMMERCE_CONTROL_SUITE_VERSION')) {
-    define('COMMERCE_CONTROL_SUITE_VERSION', '1.2.7');
+if (!defined('CONTROL_SUITE_TOOLKIT_VERSION')) {
+    define('CONTROL_SUITE_TOOLKIT_VERSION', '1.2.7');
 }
-if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_DIR')) {
-    define('COMMERCE_CONTROL_SUITE_PLUGIN_DIR', plugin_dir_path(__FILE__));
+if (!defined('CONTROL_SUITE_TOOLKIT_PLUGIN_DIR')) {
+    define('CONTROL_SUITE_TOOLKIT_PLUGIN_DIR', plugin_dir_path(__FILE__));
 }
-if (!defined('COMMERCE_CONTROL_SUITE_PLUGIN_URL')) {
-    define('COMMERCE_CONTROL_SUITE_PLUGIN_URL', plugin_dir_url(__FILE__));
+if (!defined('CONTROL_SUITE_TOOLKIT_PLUGIN_URL')) {
+    define('CONTROL_SUITE_TOOLKIT_PLUGIN_URL', plugin_dir_url(__FILE__));
 }
 
 // Prevent duplicate class declaration
-if (!class_exists('Commerce_Control_Suite')) {
-class Commerce_Control_Suite {
+if (!class_exists('Control_Suite_Toolkit')) {
+class Control_Suite_Toolkit {
     
     const PAGE_DASHBOARD = 'commerce-control-suite';
-    const PAGE_LOGS = 'commerce-control-suite-logs';
-    const PAGE_ORDER_CONTROL = 'commerce-control-suite-order-control';
-    const PAGE_PAYMENT_GATEWAY = 'commerce-control-suite-payment-gateway';
-    const PAGE_CURRENCY_CONTROL = 'commerce-control-suite-currency-control';
+    const PAGE_LOGS = 'control-suite-toolkit-logs';
+    const PAGE_ORDER_CONTROL = 'control-suite-toolkit-order-control';
+    const PAGE_PAYMENT_GATEWAY = 'control-suite-toolkit-payment-gateway';
+    const PAGE_CURRENCY_CONTROL = 'control-suite-toolkit-currency-control';
     
     const LABEL_ORDER_CONTROL = 'Order Control';
     const LABEL_PAYMENT_GATEWAY = 'Payment Gateway';
     const LABEL_CURRENCY_CONTROL = 'Currency Control';
     
-    private $logTable = 'shipping_event_logs';
-    private $optionName = 'shipping_event_receiver_settings';
+    private $logTable = 'cst_event_logs';
+    private $optionName = 'cst_shipping_event_settings';
     private $pluginFile;
     private $orderControl;
     private $paymentGatewayControl;
 	private $currencyControl;
     
     public function __construct() {
-        $this->pluginFile = COMMERCE_CONTROL_SUITE_FILE;
+        $this->pluginFile = CONTROL_SUITE_TOOLKIT_FILE;
         
         // Load dependencies
         $this->loadDependencies();
         
         // Initialize sub-modules
-        $this->orderControl = new Commerce_Control_Suite_Order_Control();
-        $this->paymentGatewayControl = new Commerce_Control_Suite_Payment_Gateway_Control();
-		$this->currencyControl = Commerce_Control_Suite_Currency_Control::instance();
+        $this->orderControl = new Control_Suite_Toolkit_Order_Control();
+        $this->paymentGatewayControl = new Control_Suite_Toolkit_Payment_Gateway_Control();
+		$this->currencyControl = Control_Suite_Toolkit_Currency_Control::instance();
         
         // Register REST API endpoint
         add_action('rest_api_init', array($this, 'registerEndpoint'));
@@ -86,7 +86,7 @@ class Commerce_Control_Suite {
         add_filter('plugin_action_links_' . plugin_basename($this->pluginFile), array($this, 'addSettingsLink'));
         
         // Register AJAX handlers
-        add_action('wp_ajax_commerce_control_suite_get_log_details', array($this, 'ajaxGetLogDetails'));
+        add_action('wp_ajax_control_suite_toolkit_get_log_details', array($this, 'ajaxGetLogDetails'));
 
         // Enqueue admin assets
         add_action('admin_enqueue_scripts', array($this, 'enqueueAdminAssets'));
@@ -101,12 +101,12 @@ class Commerce_Control_Suite {
             return;
         }
 
-        wp_enqueue_style('commerce-control-suite-admin', plugins_url('assets/css/admin.css', $this->pluginFile), array(), COMMERCE_CONTROL_SUITE_VERSION);
-        wp_enqueue_script('commerce-control-suite-admin', plugins_url('assets/js/admin.js', $this->pluginFile), array('jquery'), COMMERCE_CONTROL_SUITE_VERSION, true);
+        wp_enqueue_style('control-suite-toolkit-admin', plugins_url('assets/css/admin.css', $this->pluginFile), array(), CONTROL_SUITE_TOOLKIT_VERSION);
+        wp_enqueue_script('control-suite-toolkit-admin', plugins_url('assets/js/admin.js', $this->pluginFile), array('jquery'), CONTROL_SUITE_TOOLKIT_VERSION, true);
 
-        wp_localize_script('commerce-control-suite-admin', 'Commerce_Control_Suite_Admin', array(
+        wp_localize_script('control-suite-toolkit-admin', 'Control_Suite_Toolkit_Admin', array(
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce'    => wp_create_nonce('shipping_event_logs')
+            'nonce'    => wp_create_nonce('cst_event_logs')
         ));
     }
     
@@ -130,7 +130,12 @@ class Commerce_Control_Suite {
                 'commerce-event-logs' => self::PAGE_LOGS,
                 'commerce-order-control' => self::PAGE_ORDER_CONTROL,
                 'commerce-payment-gateway' => self::PAGE_PAYMENT_GATEWAY,
-                'commerce-currency-control' => self::PAGE_CURRENCY_CONTROL
+                'commerce-currency-control' => self::PAGE_CURRENCY_CONTROL,
+                'commerce-control-suite' => self::PAGE_DASHBOARD,
+                'commerce-control-suite-logs' => self::PAGE_LOGS,
+                'commerce-control-suite-order-control' => self::PAGE_ORDER_CONTROL,
+                'commerce-control-suite-payment-gateway' => self::PAGE_PAYMENT_GATEWAY,
+                'commerce-control-suite-currency-control' => self::PAGE_CURRENCY_CONTROL
             );
             
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -160,8 +165,8 @@ class Commerce_Control_Suite {
         
         // Add top-level menu in sidebar
         add_menu_page(
-            'Control Suite For Woocommerce',
-            'Control Suite For Woocommerce',
+            'Control Suite Toolkit',
+            'Control Suite Toolkit',
             'manage_options',
             self::PAGE_DASHBOARD,
             array($this, 'renderDashboardPage'),
@@ -299,7 +304,7 @@ class Commerce_Control_Suite {
         
         // Get statistics with caching
         $logTable    = $wpdb->prefix . $this->logTable;
-        $cache_group = 'commerce_control_suite_stats';
+        $cache_group = 'control_suite_toolkit_stats';
         $totalLogs   = wp_cache_get( 'total_logs', $cache_group );
         $successLogs = wp_cache_get( 'success_logs', $cache_group );
         $errorLogs   = wp_cache_get( 'error_logs', $cache_group );
@@ -330,7 +335,7 @@ class Commerce_Control_Suite {
         
         ?>
         <div class="wrap">
-            <h1><?php esc_html_e('Control Suite For Woocommerce - Dashboard', 'commerce-control-suite'); ?></h1>
+            <h1><?php esc_html_e('Control Suite Toolkit - Dashboard', 'commerce-control-suite'); ?></h1>
             
             <div class="dashboard-widgets" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0;">
                 
@@ -458,7 +463,7 @@ class Commerce_Control_Suite {
         
         $tableName = $wpdb->prefix . $this->logTable;
         $cache_key = 'recent_logs_20';
-        $cache_group = 'commerce_control_suite_logs';
+        $cache_group = 'control_suite_toolkit_logs';
         
         $logs = wp_cache_get( $cache_key, $cache_group );
         
@@ -569,7 +574,7 @@ class Commerce_Control_Suite {
         }
         
         // Handle form submission
-        if ( isset( $_POST['ser_order_control_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ser_order_control_nonce'] ) ), 'ser_order_control_save' ) ) {
+        if ( isset( $_POST['cst_order_control_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cst_order_control_nonce'] ) ), 'cst_order_control_save' ) ) {
             $this->handleOrderControlSubmission();
         }
         
@@ -589,7 +594,7 @@ class Commerce_Control_Suite {
             </div>
             
             <form method="post" action="">
-                <?php wp_nonce_field('ser_order_control_save', 'ser_order_control_nonce'); ?>
+                <?php wp_nonce_field('cst_order_control_save', 'cst_order_control_nonce'); ?>
                 
                 <h2>General Settings</h2>
                 <table class="form-table">
@@ -760,7 +765,7 @@ class Commerce_Control_Suite {
      * Handle Order Control form submission
      */
     private function handleOrderControlSubmission() {
-        if ( ! isset( $_POST['ser_order_control_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ser_order_control_nonce'] ) ), 'ser_order_control_save' ) ) {
+        if ( ! isset( $_POST['cst_order_control_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cst_order_control_nonce'] ) ), 'cst_order_control_save' ) ) {
             return;
         }
 
@@ -802,7 +807,7 @@ class Commerce_Control_Suite {
         }
         
         // Handle add/edit rule submission
-        if ( isset( $_POST['ser_payment_gateway_rule_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ser_payment_gateway_rule_nonce'] ) ), 'ser_payment_gateway_rule_save' ) ) {
+        if ( isset( $_POST['cst_payment_gateway_rule_nonce'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cst_payment_gateway_rule_nonce'] ) ), 'cst_payment_gateway_rule_save' ) ) {
             $this->handlePaymentGatewayRuleSubmission();
         }
         
@@ -836,7 +841,7 @@ class Commerce_Control_Suite {
                     <h2><?php echo ( isset( $_GET['action'] ) && $_GET['action'] === 'add' ) ? 'Add New Rule' : 'Edit Rule'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?></h2>
                     
                     <form method="post" action="">
-                        <?php wp_nonce_field('ser_payment_gateway_rule_save', 'ser_payment_gateway_rule_nonce'); ?>
+                        <?php wp_nonce_field('cst_payment_gateway_rule_save', 'cst_payment_gateway_rule_nonce'); ?>
                         <?php if ($edit_rule_id !== null && isset( $_GET['action'] ) && $_GET['action'] === 'edit'): // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
                             <input type="hidden" name="rule_id" value="<?php echo esc_attr($edit_rule_id); ?>" />
                         <?php endif; ?>
@@ -895,14 +900,14 @@ class Commerce_Control_Suite {
                         
                         <p class="submit">
                             <input type="submit" name="submit" class="button button-primary" value="Save Rule" />
-                            <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway')); ?>" class="button">Cancel</a>
+                            <a href="<?php echo esc_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway')); ?>" class="button">Cancel</a>
                         </p>
                     </form>
                 </div>
             <?php else: ?>
                 <!-- Rules List Table -->
                 <p>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=add')); ?>" class="button button-primary">Add New Rule</a>
+                    <a href="<?php echo esc_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway&action=add')); ?>" class="button button-primary">Add New Rule</a>
                 </p>
                 
                 <?php if (!empty($settings['rules'])): ?>
@@ -947,11 +952,11 @@ class Commerce_Control_Suite {
                                 ?>
                             </td>
                             <td>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule')); ?>" class="button button-small">Edit</a>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule')); ?>" class="button button-small">
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway&action=edit&rule_id=' . $index), 'edit_rule')); ?>" class="button button-small">Edit</a>
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway&action=toggle&rule_id=' . $index), 'toggle_rule')); ?>" class="button button-small">
                                     <?php echo $is_enabled ? 'Disable' : 'Enable'; ?>
                                 </a>
-                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule')); ?>" 
+                                <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway&action=delete&rule_id=' . $index), 'delete_rule')); ?>" 
                                    class="button button-small" 
                                    onclick="return confirm('Are you sure you want to delete this rule?');">Delete</a>
                             </td>
@@ -961,7 +966,7 @@ class Commerce_Control_Suite {
                 </table>
                 <?php else: ?>
                 <div class="notice notice-warning">
-                    <p>No payment gateway rules configured yet. <a href="<?php echo esc_url(admin_url('admin.php?page=commerce-control-suite-payment-gateway&action=add')); ?>">Add your first rule</a>.</p>
+                    <p>No payment gateway rules configured yet. <a href="<?php echo esc_url(admin_url('admin.php?page=control-suite-toolkit-payment-gateway&action=add')); ?>">Add your first rule</a>.</p>
                 </div>
                 <?php endif; ?>
             <?php endif; ?>
@@ -1015,7 +1020,7 @@ class Commerce_Control_Suite {
      * Handle payment gateway rule form submission
      */
     private function handlePaymentGatewayRuleSubmission() {
-        if ( ! isset( $_POST['ser_payment_gateway_rule_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['ser_payment_gateway_rule_nonce'] ) ), 'ser_payment_gateway_rule_save' ) ) {
+        if ( ! isset( $_POST['cst_payment_gateway_rule_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cst_payment_gateway_rule_nonce'] ) ), 'cst_payment_gateway_rule_save' ) ) {
             return;
         }
 
@@ -1048,7 +1053,7 @@ class Commerce_Control_Suite {
      * AJAX handler to get log details
      */
     public function ajaxGetLogDetails() {
-        check_ajax_referer('shipping_event_logs', 'nonce');
+        check_ajax_referer('cst_event_logs', 'nonce');
         
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -1065,7 +1070,7 @@ class Commerce_Control_Suite {
         global $wpdb;
         $tableName = $wpdb->prefix . $this->logTable;
         $cache_key = 'log_detail_' . $logId;
-        $cache_group = 'commerce_control_suite_logs';
+        $cache_group = 'control_suite_toolkit_logs';
         
         $log = wp_cache_get( $cache_key, $cache_group );
         
@@ -1172,7 +1177,7 @@ class Commerce_Control_Suite {
         }
         
         // Hook for custom actions
-        do_action('commerce_control_suite_shipping_event_received', $data);
+        do_action('control_suite_toolkit_shipping_event_received', $data);
         
         return array(
             'order_id' => $orderId,
@@ -1205,9 +1210,9 @@ class Commerce_Control_Suite {
         $insert_id = $wpdb->insert_id;
         
         // Clear related caches
-        wp_cache_delete( 'total_logs', 'commerce_control_suite_stats' );
-        wp_cache_delete( 'recent_logs', 'commerce_control_suite_stats' );
-        wp_cache_delete( 'recent_logs_20', 'commerce_control_suite_logs' );
+        wp_cache_delete( 'total_logs', 'control_suite_toolkit_stats' );
+        wp_cache_delete( 'recent_logs', 'control_suite_toolkit_stats' );
+        wp_cache_delete( 'recent_logs_20', 'control_suite_toolkit_logs' );
         
         return $insert_id;
     }
@@ -1231,11 +1236,11 @@ class Commerce_Control_Suite {
         );
         
         // Clear related caches
-        wp_cache_delete( 'success_logs', 'commerce_control_suite_stats' );
-        wp_cache_delete( 'error_logs', 'commerce_control_suite_stats' );
-        wp_cache_delete( 'recent_logs', 'commerce_control_suite_stats' );
-        wp_cache_delete( 'recent_logs_20', 'commerce_control_suite_logs' );
-        wp_cache_delete( 'log_detail_' . $logId, 'commerce_control_suite_logs' );
+        wp_cache_delete( 'success_logs', 'control_suite_toolkit_stats' );
+        wp_cache_delete( 'error_logs', 'control_suite_toolkit_stats' );
+        wp_cache_delete( 'recent_logs', 'control_suite_toolkit_stats' );
+        wp_cache_delete( 'recent_logs_20', 'control_suite_toolkit_logs' );
+        wp_cache_delete( 'log_detail_' . $logId, 'control_suite_toolkit_logs' );
     }
     
     private function getClientIp() {
@@ -1257,12 +1262,12 @@ class Commerce_Control_Suite {
         
         // Check if table exists (cached for 24 hours as schema doesn't change often)
         $cache_key = 'table_exists_' . $tableName;
-        $exists = wp_cache_get( $cache_key, 'commerce_control_suite_schema' );
+        $exists = wp_cache_get( $cache_key, 'control_suite_toolkit_schema' );
         
         if ( false === $exists ) {
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             $exists = $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $tableName ) );
-            wp_cache_set( $cache_key, $exists, 'commerce_control_suite_schema', DAY_IN_SECONDS );
+            wp_cache_set( $cache_key, $exists, 'control_suite_toolkit_schema', DAY_IN_SECONDS );
         }
 
         if ($exists != $tableName) {
@@ -1295,31 +1300,31 @@ class Commerce_Control_Suite {
         dbDelta($sql);
         
         // Clear table existence cache
-        wp_cache_delete( 'table_exists_' . $tableName, 'commerce_control_suite_schema' );
+        wp_cache_delete( 'table_exists_' . $tableName, 'control_suite_toolkit_schema' );
     }
 }
 } // End if class_exists check
 
 // Initialize the plugin only once
-if (!function_exists('commerce_control_suite_init')) {
-function commerce_control_suite_init() {
+if (!function_exists('control_suite_toolkit_init')) {
+function control_suite_toolkit_init() {
     // Check if WooCommerce is active
     if (!class_exists('WooCommerce')) {
         add_action('admin_notices', function() {
             ?>
             <div class="notice notice-error is-dismissible">
-                <p><?php esc_html_e('Control Suite For Woocommerce requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
+                <p><?php esc_html_e('Control Suite Toolkit requires WooCommerce to be installed and active.', 'commerce-control-suite'); ?></p>
             </div>
             <?php
         });
         return;
     }
 
-    if (!isset($GLOBALS['Commerce_Control_SuiteInstance']) && class_exists('Commerce_Control_Suite')) {
-        $GLOBALS['Commerce_Control_SuiteInstance'] = new Commerce_Control_Suite();
+    if (!isset($GLOBALS['Control_Suite_ToolkitInstance']) && class_exists('Control_Suite_Toolkit')) {
+        $GLOBALS['Control_Suite_ToolkitInstance'] = new Control_Suite_Toolkit();
     }
 }
 }
 
 // Always run initialization on plugins_loaded
-add_action('plugins_loaded', 'commerce_control_suite_init');
+add_action('plugins_loaded', 'control_suite_toolkit_init');

@@ -8,9 +8,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-class Commerce_Control_Suite_Payment_Gateway_Control {
+class Control_Suite_Toolkit_Payment_Gateway_Control {
     
-    private $optionName = 'ser_payment_gateway_settings';
+    private $optionName = 'cst_payment_gateway_settings';
     
     public function __construct() {
         add_filter('woocommerce_available_payment_gateways', array($this, 'filterGatewaysByCurrency'), 999);
@@ -25,7 +25,7 @@ class Commerce_Control_Suite_Payment_Gateway_Control {
         }
         
         $settings = $this->getSettings();
-        $currentCurrency = Commerce_Control_Suite_Currency_Control::instance()->get_current_currency();
+        $currentCurrency = Control_Suite_Toolkit_Currency_Control::instance()->get_current_currency();
         
         if (empty($settings['rules']) || !is_array($settings['rules'])) {
             return $availableGateways;
@@ -83,7 +83,7 @@ class Commerce_Control_Suite_Payment_Gateway_Control {
      */
     public function getActiveCurrencies() {
         $all_currencies = get_woocommerce_currencies();
-        $active_currencies_codes = Commerce_Control_Suite_Currency_Control::instance()->get_available_currencies();
+        $active_currencies_codes = Control_Suite_Toolkit_Currency_Control::instance()->get_available_currencies();
         
         $active = array();
         foreach ($active_currencies_codes as $code) {

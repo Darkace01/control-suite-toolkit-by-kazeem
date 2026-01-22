@@ -12,12 +12,12 @@ jQuery(document).ready(function($) {
         
         // Make AJAX request
         $.ajax({
-            url: Commerce_Control_Suite_Admin.ajax_url,
+            url: Control_Suite_Toolkit_Admin.ajax_url,
             type: 'POST',
             data: {
-                action: 'commerce_control_suite_get_log_details',
+                action: 'control_suite_toolkit_get_log_details',
                 log_id: logId,
-                nonce: Commerce_Control_Suite_Admin.nonce
+                nonce: Control_Suite_Toolkit_Admin.nonce
             },
             success: function(response) {
                 if (response.success) {
@@ -83,8 +83,8 @@ jQuery(document).ready(function($) {
 
     function getCurrencyOptions() {
         let options = '<option value="">Select Currency</option>';
-        if (typeof Commerce_Control_Suite_Currency_Data !== 'undefined') {
-            $.each(Commerce_Control_Suite_Currency_Data, function(code, data) {
+        if (typeof Control_Suite_Toolkit_Currency_Data !== 'undefined') {
+            $.each(Control_Suite_Toolkit_Currency_Data, function(code, data) {
                 options += `<option value="${code}" data-symbol="${data.symbol}">${data.name} (${code})</option>`;
             });
         }
