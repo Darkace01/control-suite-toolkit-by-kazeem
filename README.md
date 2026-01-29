@@ -1,7 +1,7 @@
 === Control Suite Toolkit By Kazeem ===
 Contributors: kazeemquadri
 Tags: woocommerce, order control, payment gateway, shipping, webhooks
-Plugin URI: https://github.com/Darkace01/control-suite-toolkit
+Plugin URI: https://github.com/Darkace01/control-suite-toolkit-by-kazeem
 Requires at least: 6.2
 Tested up to: 6.9
 Stable tag: 1.2.7
@@ -37,6 +37,14 @@ Control Suite Toolkit By Kazeem is a comprehensive WordPress plugin that gives y
 - **Enable/Disable Toggle** - Quickly enable or disable rules without deleting
 - **Multi-Currency Support** - Select multiple currencies per rule
 - **Multi-Gateway Support** - Select multiple payment gateways per rule
+
+### 💱 Currency Control
+
+- **Custom Exchange Rates** - Set manual exchange rates for different currencies
+- **Currency Switcher** - Allow customers to switch currencies on the frontend
+- **Automatic Price Conversion** - Prices automatically update based on defined rates
+- **Symbol Customization** - Customize currency symbols
+- **Geolocate (Coming Soon)** - Automatically detect customer currency
 
 ### 🔗 Shipping Event Webhooks
 
@@ -81,6 +89,14 @@ Control Suite Toolkit By Kazeem is a comprehensive WordPress plugin that gives y
 5. Select payment gateways to show for those currencies
 6. Enable the rule
 7. Save
+
+### Currency Control
+
+1. Go to **Control Suite Toolkit > Currency Control**
+2. Enable the Currency Control module
+3. Add currencies and set their exchange rates relative to your base currency
+4. Customize symbols if necessary
+5. Save settings to activate the frontend switcher
 
 ### Shipping Webhooks
 

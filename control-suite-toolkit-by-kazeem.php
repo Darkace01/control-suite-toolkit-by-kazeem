@@ -1,7 +1,7 @@
 <?php
 /**
  * Plugin Name: Control Suite Toolkit By Kazeem
- * Plugin URI: https://github.com/Darkace01/control-suite-toolkit
+ * Plugin URI: https://github.com/Darkace01/control-suite-toolkit-by-kazeem
  * Description: Comprehensive control suite for WooCommerce to manage order restrictions, payment gateway rules, shipping event webhooks, and advanced currency switching.
  * Version: 1.2.7
  * Author: Kazeem Quadri
